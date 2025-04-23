@@ -79,25 +79,24 @@ struct Mesh {
         return true;
     }
 
-void UploadToGPU() {
-    vbo.Reinitialise(
-        pangolin::GlArrayBuffer,
-        vertices.size(),
-        GL_FLOAT,
-        6, // x, y, z, nx, ny, nz
-        GL_STATIC_DRAW,
-        vertices.data()
-    );
-    ibo.Reinitialise(
-        pangolin::GlElementArrayBuffer,
-        indices.size(),
-        GL_UNSIGNED_INT,
-        1,
-        GL_STATIC_DRAW,
-        indices.data()
-    );
-}
-
+    void UploadToGPU() {
+        vbo.Reinitialise(
+            pangolin::GlArrayBuffer,
+            vertices.size(),
+            GL_FLOAT,
+            6, // x, y, z, nx, ny, nz
+            GL_STATIC_DRAW,
+            vertices.data()
+        );
+        ibo.Reinitialise(
+            pangolin::GlElementArrayBuffer,
+            indices.size(),
+            GL_UNSIGNED_INT,
+            1,
+            GL_STATIC_DRAW,
+            indices.data()
+        );
+    }
 
     void Draw() const {
         vbo.Bind();
@@ -117,16 +116,21 @@ void UploadToGPU() {
 int main() {
     // Pangolin window/context
     const int width = 900, height = 700;
-    pangolin::CreateWindowAndBind("Modern OpenGL OBJ Viewer (No GLAD)", width, height);
+    pangolin::CreateWindowAndBind("Two OBJ Viewer", width, height);
     glEnable(GL_DEPTH_TEST);
 
-    // Load mesh
-    Mesh mesh;
-    if (!mesh.LoadFromObj("models/model.obj")) {
-        std::cerr << "Failed to load OBJ file!" << std::endl;
+    // Load two meshes
+    Mesh mesh1, mesh2;
+    if (!mesh1.LoadFromObj("models/model.obj")) {
+        std::cerr << "Failed to load model1.obj" << std::endl;
         return -1;
     }
-    mesh.UploadToGPU();
+    if (!mesh2.LoadFromObj("models/al.obj")) {
+        std::cerr << "Failed to load model2.obj" << std::endl;
+        return -1;
+    }
+    mesh1.UploadToGPU();
+    mesh2.UploadToGPU();
 
     // Load shaders
     std::string vsrc = LoadFile("../vertex_shader.glsl");
@@ -136,10 +140,10 @@ int main() {
     shader.AddShader(pangolin::GlSlFragmentShader, fsrc);
     shader.Link();
 
-    // Camera
+    // Camera: position at (25,0,0), look at (0,0,0), up is Y
     pangolin::OpenGlRenderState s_cam(
         pangolin::ProjectionMatrix(width, height, 500, 500, width/2, height/2, 0.1, 1000),
-        pangolin::ModelViewLookAt(0, 2, 6, 0, 0, 0, pangolin::AxisY)
+        pangolin::ModelViewLookAt(25, 0, 0, 0, 0, 0, pangolin::AxisY)
     );
     pangolin::Handler3D handler(s_cam);
     pangolin::View& d_cam = pangolin::CreateDisplay()
@@ -154,16 +158,39 @@ int main() {
 
         shader.Bind();
 
-        // Model, view, projection
-        pangolin::OpenGlMatrix model = pangolin::IdentityMatrix();
         pangolin::OpenGlMatrix view = s_cam.GetModelViewMatrix();
         pangolin::OpenGlMatrix proj = s_cam.GetProjectionMatrix();
 
-        shader.SetUniform("model", model);
-        shader.SetUniform("view", view);
-        shader.SetUniform("projection", proj);
+        // Draw mesh1 at (-15, 0, 0)
+        {
+            // For (-15, 0, 0)
+pangolin::OpenGlMatrix model1;
+model1.SetIdentity();
+model1.m[12] = -15.0;
+model1.m[13] = 0.0;
+model1.m[14] = 0.0;
 
-        mesh.Draw();
+
+
+            shader.SetUniform("model", model1);
+            shader.SetUniform("view", view);
+            shader.SetUniform("projection", proj);
+            mesh1.Draw();
+        }
+
+        // Draw mesh2 at (15, 0, 0)
+        {
+            // For (15, 0, 0)
+pangolin::OpenGlMatrix model2;
+model2.SetIdentity();
+model2.m[12] = 15.0;
+model2.m[13] = 0.0;
+model2.m[14] = 0.0;
+            shader.SetUniform("model", model2);
+            shader.SetUniform("view", view);
+            shader.SetUniform("projection", proj);
+            mesh2.Draw();
+        }
 
         shader.Unbind();
 
