@@ -1,23 +1,33 @@
+#include <pangolin/pangolin.h>
+#include <pangolin/gl/glsl.h>
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
-#include <pangolin/pangolin.h>
-//#include <pangolin/handler/handler3d.h>
 #include <iostream>
 #include <vector>
+#include <fstream>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 
-// Vertex structure
+// Utility: Load file as string
+std::string LoadFile(const std::string& path) {
+    std::ifstream file(path);
+    std::stringstream ss;
+    ss << file.rdbuf();
+    return ss.str();
+}
+
+// Vertex struct with normals
 struct Vertex {
     float x, y, z;
+    float nx, ny, nz;
 };
 
-// Helper to load OBJ and create buffers
 struct Mesh {
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
-    GLuint vbo = 0, ibo = 0;
+    pangolin::GlBuffer vbo, ibo;
     size_t index_count = 0;
 
     bool LoadFromObj(const std::string& filename) {
@@ -30,7 +40,12 @@ struct Mesh {
         if (!err.empty()) std::cerr << "ERR: " << err << std::endl;
         if (!ret) return false;
 
-        std::unordered_map<int, unsigned int> index_map;
+        struct IndexHash {
+            size_t operator()(const std::pair<int, int>& p) const {
+                return std::hash<int>()(p.first) ^ (std::hash<int>()(p.second) << 1);
+            }
+        };
+        std::unordered_map<std::pair<int, int>, unsigned int, IndexHash> index_map;
         for (const auto& shape : shapes) {
             size_t index_offset = 0;
             for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++) {
@@ -38,16 +53,24 @@ struct Mesh {
                 for (int v = 0; v < fv; v++) {
                     tinyobj::index_t idx = shape.mesh.indices[index_offset + v];
                     int vi = idx.vertex_index;
-                    if (index_map.count(vi) == 0) {
-                        Vertex vert = {
-                            attrib.vertices[3 * vi + 0],
-                            attrib.vertices[3 * vi + 1],
-                            attrib.vertices[3 * vi + 2]
-                        };
+                    int ni = idx.normal_index;
+                    std::pair<int, int> key = {vi, ni};
+                    if (index_map.count(key) == 0) {
+                        Vertex vert;
+                        vert.x = attrib.vertices[3 * vi + 0];
+                        vert.y = attrib.vertices[3 * vi + 1];
+                        vert.z = attrib.vertices[3 * vi + 2];
+                        if (ni >= 0) {
+                            vert.nx = attrib.normals[3 * ni + 0];
+                            vert.ny = attrib.normals[3 * ni + 1];
+                            vert.nz = attrib.normals[3 * ni + 2];
+                        } else {
+                            vert.nx = vert.ny = vert.nz = 0.0f;
+                        }
                         vertices.push_back(vert);
-                        index_map[vi] = vertices.size() - 1;
+                        index_map[key] = vertices.size() - 1;
                     }
-                    indices.push_back(index_map[vi]);
+                    indices.push_back(index_map[key]);
                 }
                 index_offset += fv;
             }
@@ -56,89 +79,96 @@ struct Mesh {
         return true;
     }
 
-    void UploadToGPU() {
-        glGenBuffers(1, &vbo);
-        glGenBuffers(1, &ibo);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    }
+void UploadToGPU() {
+    vbo.Reinitialise(
+        pangolin::GlArrayBuffer,
+        vertices.size(),
+        GL_FLOAT,
+        6, // x, y, z, nx, ny, nz
+        GL_STATIC_DRAW,
+        vertices.data()
+    );
+    ibo.Reinitialise(
+        pangolin::GlElementArrayBuffer,
+        indices.size(),
+        GL_UNSIGNED_INT,
+        1,
+        GL_STATIC_DRAW,
+        indices.data()
+    );
+}
+
 
     void Draw() const {
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glVertexPointer(3, GL_FLOAT, sizeof(Vertex), 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+        vbo.Bind();
+        ibo.Bind();
+        glEnableVertexAttribArray(0); // position
+        glEnableVertexAttribArray(1); // normal
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(3 * sizeof(float)));
         glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_INT, 0);
-        glDisableClientState(GL_VERTEX_ARRAY);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    }
-
-    void FreeGPU() {
-        if (vbo) glDeleteBuffers(1, &vbo);
-        if (ibo) glDeleteBuffers(1, &ibo);
+        glDisableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
+        vbo.Unbind();
+        ibo.Unbind();
     }
 };
 
 int main() {
-    // Load two meshes
-    Mesh mesh1, mesh2;
-    if (!mesh1.LoadFromObj("models/model.obj")) {
-        std::cerr << "Failed to load model1.obj" << std::endl;
-        return 1;
-    }
-    if (!mesh2.LoadFromObj("models/al.obj")) {
-        std::cerr << "Failed to load model2.obj" << std::endl;
-        return 1;
-    }
-
-    // Pangolin window setup
-    const int width = 800, height = 600;
-    pangolin::CreateWindowAndBind("Two OBJ Viewer", width, height);
+    // Pangolin window/context
+    const int width = 900, height = 700;
+    pangolin::CreateWindowAndBind("Modern OpenGL OBJ Viewer (No GLAD)", width, height);
     glEnable(GL_DEPTH_TEST);
 
+    // Load mesh
+    Mesh mesh;
+    if (!mesh.LoadFromObj("models/model.obj")) {
+        std::cerr << "Failed to load OBJ file!" << std::endl;
+        return -1;
+    }
+    mesh.UploadToGPU();
+
+    // Load shaders
+    std::string vsrc = LoadFile("../vertex_shader.glsl");
+    std::string fsrc = LoadFile("../fragment_shader.glsl");
+    pangolin::GlSlProgram shader;
+    shader.AddShader(pangolin::GlSlVertexShader, vsrc);
+    shader.AddShader(pangolin::GlSlFragmentShader, fsrc);
+    shader.Link();
+
+    // Camera
     pangolin::OpenGlRenderState s_cam(
         pangolin::ProjectionMatrix(width, height, 500, 500, width/2, height/2, 0.1, 1000),
-        pangolin::ModelViewLookAt(15, 15, 15, 0, 0, 0, pangolin::AxisY)
+        pangolin::ModelViewLookAt(0, 2, 6, 0, 0, 0, pangolin::AxisY)
     );
     pangolin::Handler3D handler(s_cam);
     pangolin::View& d_cam = pangolin::CreateDisplay()
         .SetBounds(0.0, 1.0, 0.0, 1.0, -width/(float)height)
         .SetHandler(&handler);
 
-    // Upload meshes to GPU
-    mesh1.UploadToGPU();
-    mesh2.UploadToGPU();
-
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-
     // Main loop
     while (!pangolin::ShouldQuit()) {
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         d_cam.Activate(s_cam);
 
-        // Draw mesh1 at (-3,0,0)
-        glPushMatrix();
-        glTranslatef(-10.0f, 0.0f, 0.0f);
-        mesh1.Draw();
-        glPopMatrix();
+        shader.Bind();
 
-        // Draw mesh2 at (3,0,0)
-        glPushMatrix();
-        glTranslatef(10.0f, 0.0f, 0.0f);
-        mesh2.Draw();
-        glPopMatrix();
+        // Model, view, projection
+        pangolin::OpenGlMatrix model = pangolin::IdentityMatrix();
+        pangolin::OpenGlMatrix view = s_cam.GetModelViewMatrix();
+        pangolin::OpenGlMatrix proj = s_cam.GetProjectionMatrix();
 
-        pangolin::glDrawAxis(20.0);
+        shader.SetUniform("model", model);
+        shader.SetUniform("view", view);
+        shader.SetUniform("projection", proj);
+
+        mesh.Draw();
+
+        shader.Unbind();
+
+        pangolin::glDrawAxis(1.0);
         pangolin::FinishFrame();
     }
-
-    mesh1.FreeGPU();
-    mesh2.FreeGPU();
-
     return 0;
 }
