@@ -14,6 +14,8 @@ include_directories(
 
 
 )
-add_executable(test_window main.cpp)
+add_executable(test_window Object.cpp 
+main.cpp
+)
 
 target_link_libraries(test_window ${Pangolin_LIBRARIES})

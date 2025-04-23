@@ -1,5 +1,6 @@
 CMakeFiles/test_window.dir/main.cpp.o: /home/samsung/Dev/Test/main.cpp \
- /usr/include/stdc-predef.h /usr/local/include/pangolin/pangolin.h \
+ /usr/include/stdc-predef.h /home/samsung/Dev/Test/Object.h \
+ /usr/local/include/pangolin/pangolin.h \
  /usr/local/include/pangolin/platform.h \
  /usr/local/include/pangolin/utils/assert.h \
  /usr/local/include/pangolin/utils/format_string.h \
@@ -478,5 +479,4 @@ CMakeFiles/test_window.dir/main.cpp.o: /home/samsung/Dev/Test/main.cpp \
  /usr/local/include/pangolin/video/stream_info.h \
  /usr/local/include/pangolin/video/video_output_interface.h \
  /usr/local/include/pangolin/video/video_input.h \
- /usr/local/include/pangolin/video/video_output.h \
- /home/samsung/Dev/Test/../Pangolin/components/tinyobj/include/tinyobj/tiny_obj_loader.h
+ /usr/local/include/pangolin/video/video_output.h

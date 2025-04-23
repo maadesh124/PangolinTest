@@ -129,6 +129,30 @@ test_window/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_window.dir/build.make CMakeFiles/test_window.dir/build
 .PHONY : test_window/fast
 
+Object.o: Object.cpp.o
+.PHONY : Object.o
+
+# target to build an object file
+Object.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_window.dir/build.make CMakeFiles/test_window.dir/Object.cpp.o
+.PHONY : Object.cpp.o
+
+Object.i: Object.cpp.i
+.PHONY : Object.i
+
+# target to preprocess a source file
+Object.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_window.dir/build.make CMakeFiles/test_window.dir/Object.cpp.i
+.PHONY : Object.cpp.i
+
+Object.s: Object.cpp.s
+.PHONY : Object.s
+
+# target to generate assembly for a file
+Object.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_window.dir/build.make CMakeFiles/test_window.dir/Object.cpp.s
+.PHONY : Object.cpp.s
+
 main.o: main.cpp.o
 .PHONY : main.o
 
@@ -162,6 +186,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... test_window"
+	@echo "... Object.o"
+	@echo "... Object.i"
+	@echo "... Object.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"

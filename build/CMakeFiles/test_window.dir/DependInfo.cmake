@@ -8,6 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "/home/samsung/Dev/Test/Object.cpp" "CMakeFiles/test_window.dir/Object.cpp.o" "gcc" "CMakeFiles/test_window.dir/Object.cpp.o.d"
   "/home/samsung/Dev/Test/main.cpp" "CMakeFiles/test_window.dir/main.cpp.o" "gcc" "CMakeFiles/test_window.dir/main.cpp.o.d"
   )
 
