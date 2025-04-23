@@ -1,0 +1,113 @@
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "tiny_obj_loader.h"
+
+#include <pangolin/pangolin.h>
+#include <iostream>
+#include <vector>
+#include <string>
+
+// Vertex structure
+struct Vertex {
+    float x, y, z;
+};
+
+int main() {
+    // Load OBJ file with TinyObjLoader
+    std::string inputfile = "models/model.obj"; // Change as needed
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string warn, err;
+    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, inputfile.c_str());
+
+    if (!warn.empty()) std::cout << "WARN: " << warn << std::endl;
+    if (!err.empty()) std::cerr << "ERR: " << err << std::endl;
+    if (!ret) {
+        std::cerr << "Failed to load OBJ file." << std::endl;
+        return 1;
+    }
+
+    // Flatten all shapes into a single vertex/index buffer
+    std::vector<Vertex> vertices;
+    std::vector<unsigned int> indices;
+    std::unordered_map<int, unsigned int> index_map; // Map OBJ index to our index
+
+    for (const auto& shape : shapes) {
+        size_t index_offset = 0;
+        for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++) {
+            int fv = shape.mesh.num_face_vertices[f];
+            for (int v = 0; v < fv; v++) {
+                tinyobj::index_t idx = shape.mesh.indices[index_offset + v];
+                int vi = idx.vertex_index;
+                // Avoid duplicate vertices
+                if (index_map.count(vi) == 0) {
+                    Vertex vert = {
+                        attrib.vertices[3 * vi + 0],
+                        attrib.vertices[3 * vi + 1],
+                        attrib.vertices[3 * vi + 2]
+                    };
+                    vertices.push_back(vert);
+                    index_map[vi] = vertices.size() - 1;
+                }
+                indices.push_back(index_map[vi]);
+            }
+            index_offset += fv;
+        }
+    }
+
+    // Pangolin window setup
+    const int width = 800, height = 600;
+    pangolin::CreateWindowAndBind("TinyObj OBJ Viewer", width, height);
+    glEnable(GL_DEPTH_TEST);
+
+    pangolin::OpenGlRenderState s_cam(
+        pangolin::ProjectionMatrix(width, height, 500, 500, width/2, height/2, 0.1, 1000),
+        pangolin::ModelViewLookAt(5, 5, 5, 0, 0, 0, pangolin::AxisY)
+    );
+    pangolin::Handler3D handler(s_cam);
+    pangolin::View& d_cam = pangolin::CreateDisplay()
+        .SetBounds(0.0, 1.0, 0.0, 1.0, -width/(float)height)
+        .SetHandler(&handler);
+
+    // OpenGL buffer setup
+    GLuint vbo, ibo;
+    glGenBuffers(1, &vbo);
+    glGenBuffers(1, &ibo);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+
+    // Main loop
+    while (!pangolin::ShouldQuit()) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        d_cam.Activate(s_cam);
+
+        // Draw mesh
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glVertexPointer(3, GL_FLOAT, sizeof(Vertex), 0);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+
+        glDisableClientState(GL_VERTEX_ARRAY);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        pangolin::glDrawAxis(1.0);
+        pangolin::FinishFrame();
+    }
+
+    glDeleteBuffers(1, &vbo);
+    glDeleteBuffers(1, &ibo);
+
+    return 0;
+}

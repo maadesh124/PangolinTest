@@ -1,0 +1,104 @@
+#include <pangolin/pangolin.h>
+#include <pangolin/geometry/geometry.h>
+#include <pangolin/geometry/geometry_obj.h>
+#include <pangolin/geometry/glgeometry.h>
+#include <pangolin/gl/glvbo.h>
+#include <pangolin/gl/glsl.h>
+#include <iostream>
+
+
+
+
+void RenderGlGeometryIndexed(pangolin::GlGeometry& geom, GLenum mode = GL_TRIANGLES)
+{
+    // Find the geometry buffer (vertex positions)
+    auto geom_it = geom.buffers.find("geometry");
+    if (geom_it == geom.buffers.end()) {
+        std::cerr << "No geometry buffer found!" << std::endl;
+        return;
+    }
+    pangolin::GlGeometry::Element& geometry = geom_it->second;
+
+    // For each object (group of faces)
+    for (auto& [name, elem] : geom.objects) {
+        // Find the indices for this object
+        auto idx_it = elem.attributes.find("vertex_indices");
+        if (idx_it == elem.attributes.end()) continue;
+        const auto& indices_attr = idx_it->second;
+
+        // Find the vertex attribute in the geometry buffer
+        auto vert_it = geometry.attributes.find("vertex");
+        if (vert_it == geometry.attributes.end()) continue;
+        const auto& vert_attr = vert_it->second;
+
+        // Bind vertex buffer
+        geometry.Bind();
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glVertexPointer(vert_attr.count_per_element, vert_attr.gltype, vert_attr.stride_bytes, (GLvoid*)vert_attr.offset);
+
+        // Bind index buffer
+        elem.Bind(); // Binds the element buffer (GL_ELEMENT_ARRAY_BUFFER)
+        glDrawElements(mode, indices_attr.num_elements, indices_attr.gltype, (GLvoid*)indices_attr.offset);
+
+        glDisableClientState(GL_VERTEX_ARRAY);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+}
+
+
+
+int main() {
+    const int width = 800, height = 600;
+
+    // Create Pangolin window
+    pangolin::CreateWindowAndBind("OBJ Viewer", width, height);
+    glEnable(GL_DEPTH_TEST);
+
+    // Setup camera
+    pangolin::OpenGlRenderState s_cam(
+        pangolin::ProjectionMatrix(width, height, 500, 500, width/2, height/2, 0.1, 1000),
+        pangolin::ModelViewLookAt(5, 5, 5, 0, 0, 0, pangolin::AxisY)
+    );
+
+    pangolin::Handler3D handler(s_cam);
+    pangolin::View& d_cam = pangolin::CreateDisplay()
+        .SetBounds(0.0, 1.0, 0.0, 1.0, -width / (float)height)
+        .SetHandler(&handler);
+
+    // Load model
+    pangolin::Geometry geom = pangolin::LoadGeometry("models/model.obj");
+    pangolin::GlGeometry glgeom = pangolin::ToGlGeometry(geom);
+
+auto geom_it = glgeom.buffers.find("geometry");
+if (geom_it != glgeom.buffers.end()) {
+    auto attr_it = geom_it->second.attributes.find("vertex");
+    if (attr_it != geom_it->second.attributes.end()) {
+        std::cout << "Vertex count: " << attr_it->second.num_elements << std::endl;
+    } else {
+        std::cout << "No 'vertex' attribute in 'geometry' buffer" << std::endl;
+    }
+} else {
+    std::cout << "No 'geometry' buffer found" << std::endl;
+}
+
+
+
+    glDisable(GL_CULL_FACE);
+
+
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);  // Dark teal, helps distinguish visuals
+
+    while (!pangolin::ShouldQuit()) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        d_cam.Activate(s_cam);
+
+        RenderGlGeometryIndexed(glgeom);
+        pangolin::glDrawAxis(1.0); // Draw coordinate axes
+
+        pangolin::FinishFrame();
+    }
+
+    return 0;
+}
+

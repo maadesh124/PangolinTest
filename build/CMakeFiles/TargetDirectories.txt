@@ -1,0 +1,3 @@
+/home/samsung/Dev/Test/build/CMakeFiles/test_window.dir
+/home/samsung/Dev/Test/build/CMakeFiles/edit_cache.dir
+/home/samsung/Dev/Test/build/CMakeFiles/rebuild_cache.dir

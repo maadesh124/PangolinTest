@@ -1,0 +1,37 @@
+#include <pangolin/pangolin.h>
+
+int main() {
+    // Create a window
+    pangolin::CreateWindowAndBind("Interactive Cube Viewer", 800, 600);
+
+    // Enable OpenGL depth testing
+    glEnable(GL_DEPTH_TEST);
+
+    // Define Projection and ModelView matrices
+    pangolin::OpenGlRenderState s_cam(
+        pangolin::ProjectionMatrix(800, 600, 500, 500, 400, 300, 0.1, 1000),
+        pangolin::ModelViewLookAt(3, 3, 3,   // Camera position (x, y, z)
+                                  0, 0, 0,   // Look at origin
+                                  pangolin::AxisY) // Up direction
+    );
+
+    // Create a display view with 3D handler
+    pangolin::View& d_cam = pangolin::CreateDisplay()
+        .SetBounds(0.0, 1.0, 0.0, 1.0, -800.0f/600.0f)
+        .SetHandler(new pangolin::Handler3D(s_cam));
+
+    // Main rendering loop
+    while (!pangolin::ShouldQuit()) {
+        // Clear screen and activate camera view
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        d_cam.Activate(s_cam);
+
+        // Draw a colored cube centered at origin
+        pangolin::glDrawColouredCube();
+
+        // Swap frames
+        pangolin::FinishFrame();
+    }
+
+    return 0;
+}
