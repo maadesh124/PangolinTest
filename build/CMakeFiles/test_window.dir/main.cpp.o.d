@@ -479,4 +479,5 @@ CMakeFiles/test_window.dir/main.cpp.o: /home/samsung/Dev/Test/main.cpp \
  /usr/local/include/pangolin/video/stream_info.h \
  /usr/local/include/pangolin/video/video_output_interface.h \
  /usr/local/include/pangolin/video/video_input.h \
- /usr/local/include/pangolin/video/video_output.h
+ /usr/local/include/pangolin/video/video_output.h \
+ /home/samsung/Dev/Test/shaders.h

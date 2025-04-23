@@ -1114,7 +1114,8 @@ CMakeFiles/test_window.dir/main.cpp.o: ../main.cpp \
   /usr/local/include/pangolin/video/stream_info.h \
   /usr/local/include/pangolin/video/video_output_interface.h \
   /usr/local/include/pangolin/video/video_input.h \
-  /usr/local/include/pangolin/video/video_output.h
+  /usr/local/include/pangolin/video/video_output.h \
+  ../shaders.h
 
 
 ../main.cpp:
@@ -2200,6 +2201,8 @@ CMakeFiles/test_window.dir/main.cpp.o: ../main.cpp \
 /usr/local/include/pangolin/gl/gltext.h:
 
 /usr/include/c++/11/stack:
+
+../shaders.h:
 
 /usr/include/c++/11/deque:
 

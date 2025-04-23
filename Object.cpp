@@ -1,6 +1,6 @@
 #include "Object.h"
 #define TINYOBJLOADER_IMPLEMENTATION
-#include "tiny_obj_loader.h"
+#include "components/tinyobj/include/tinyobj/tiny_obj_loader.h"
 
 #include <iostream>
 #include <unordered_map>

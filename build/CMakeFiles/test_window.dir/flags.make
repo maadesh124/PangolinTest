@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = -DHAVE_EIGEN -DHAVE_EPOXY -DPANGO_DEFAULT_WIN_URI=\"x11\" -D_LINUX_
 
-CXX_INCLUDES = -I/home/samsung/Dev/Test/../Pangolin/tools/ModelViewer -I/home/samsung/Dev/Test/../Pangolin/components/tinyobj/include/tinyobj -isystem /usr/include/eigen3
+CXX_INCLUDES = -I/home/samsung/Dev/Test/../Pangolin -isystem /usr/include/eigen3
 
 CXX_FLAGS = -std=gnu++17
 

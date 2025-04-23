@@ -1,5 +1,5 @@
 #include "Object.h"
-
+#include "shaders.h"
 
 int main() {
     const int width = 900, height = 700;
@@ -19,12 +19,10 @@ int main() {
     obj1.UploadToGPU();
     obj2.UploadToGPU();
 
-    // Load shaders
-    std::string vsrc = LoadFile("../vertex_shader.glsl");
-    std::string fsrc = LoadFile("../fragment_shader.glsl");
+
     pangolin::GlSlProgram shader;
-    shader.AddShader(pangolin::GlSlVertexShader, vsrc);
-    shader.AddShader(pangolin::GlSlFragmentShader, fsrc);
+    shader.AddShader(pangolin::GlSlVertexShader, vertex_shader);
+    shader.AddShader(pangolin::GlSlFragmentShader, fragment_shader);
     shader.Link();
 
     // Camera: position at (25,0,0), look at (0,0,0), up is Y
