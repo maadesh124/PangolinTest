@@ -4,6 +4,9 @@
 int main() {
     const int width = 900, height = 700;
     pangolin::CreateWindowAndBind("Two OBJ Viewer", width, height);
+        glClearColor(0.6f, 1.0f, 0.6f, 1.0f);
+        glEnable (GL_BLEND);
+    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
 
     // Load two objects
@@ -52,6 +55,13 @@ int main() {
         model1.m[12] = -15.0;
         model1.m[13] = 0.0;
         model1.m[14] = 0.0;
+
+
+        float scaleFactor = 0.2f;
+        model1.m[0] *= scaleFactor; // scale X
+        model1.m[5] *= scaleFactor; // scale Y
+        model1.m[10] *= scaleFactor; // scale Z
+
         shader.SetUniform("model", model1);
         shader.SetUniform("view", view);
         shader.SetUniform("projection", proj);

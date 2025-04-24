@@ -114,7 +114,9 @@ int main() {
     mesh1.UploadToGPU();
     mesh2.UploadToGPU();
 
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClearColor(0.6f, 1.0f, 0.6f, 1.0f);
+        glEnable (GL_BLEND);
+    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Main loop
     while (!pangolin::ShouldQuit()) {
