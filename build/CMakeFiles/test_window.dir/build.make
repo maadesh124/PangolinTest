@@ -114,6 +114,14 @@ test_window: /usr/local/lib/libpango_python.so
 test_window: /usr/local/lib/libpango_scene.so.0.9.2
 test_window: /usr/local/lib/libpango_tools.so.0.9.2
 test_window: /usr/local/lib/libpango_video.so.0.9.2
+test_window: /usr/local/lib/libopencv_gapi.so.4.6.0
+test_window: /usr/local/lib/libopencv_highgui.so.4.6.0
+test_window: /usr/local/lib/libopencv_ml.so.4.6.0
+test_window: /usr/local/lib/libopencv_objdetect.so.4.6.0
+test_window: /usr/local/lib/libopencv_photo.so.4.6.0
+test_window: /usr/local/lib/libopencv_stitching.so.4.6.0
+test_window: /usr/local/lib/libopencv_video.so.4.6.0
+test_window: /usr/local/lib/libopencv_videoio.so.4.6.0
 test_window: /usr/local/lib/libpango_geometry.so.0.9.2
 test_window: /usr/local/lib/libtinyobj.so.0.9.2
 test_window: /usr/local/lib/libpango_display.so.0.9.2
@@ -126,6 +134,13 @@ test_window: /usr/lib/x86_64-linux-gnu/libepoxy.so
 test_window: /usr/local/lib/libpango_image.so.0.9.2
 test_window: /usr/local/lib/libpango_packetstream.so.0.9.2
 test_window: /usr/local/lib/libpango_core.so.0.9.2
+test_window: /usr/local/lib/libopencv_imgcodecs.so.4.6.0
+test_window: /usr/local/lib/libopencv_dnn.so.4.6.0
+test_window: /usr/local/lib/libopencv_calib3d.so.4.6.0
+test_window: /usr/local/lib/libopencv_features2d.so.4.6.0
+test_window: /usr/local/lib/libopencv_flann.so.4.6.0
+test_window: /usr/local/lib/libopencv_imgproc.so.4.6.0
+test_window: /usr/local/lib/libopencv_core.so.4.6.0
 test_window: CMakeFiles/test_window.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/samsung/Dev/Test/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable test_window"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/test_window.dir/link.txt --verbose=$(VERBOSE)

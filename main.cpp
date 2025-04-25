@@ -1,87 +1,99 @@
+#include <pangolin/pangolin.h>
+#include <opencv2/opencv.hpp>
 #include "Object.h"
 #include "shaders.h"
 
+using namespace std;
+
+void DrawImageTexture(pangolin::GlTexture &imageTexture, cv::Mat &im) {
+    if(!im.empty()) {
+        imageTexture.Upload(im.data, GL_RGB, GL_UNSIGNED_BYTE);
+        imageTexture.RenderToViewportFlipY();
+    }
+}
+
 int main() {
-    const int width = 900, height = 700;
-    pangolin::CreateWindowAndBind("Two OBJ Viewer", width, height);
-        glClearColor(0.6f, 1.0f, 0.6f, 1.0f);
-        glEnable (GL_BLEND);
-    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // Load image and convert to RGB
+    cv::Mat image = cv::imread("im1.jpg");
+    cv::Mat image_rgb;
+    cv::cvtColor(image, image_rgb, cv::COLOR_BGR2RGB);
+    
+    const int width = image.cols;
+    const int height = image.rows;
+    cout << "Image size: " << width << "x" << height << endl;
+
+    // Create Pangolin window
+    pangolin::CreateWindowAndBind("3D Overlay Demo", width, height);
     glEnable(GL_DEPTH_TEST);
 
-    // Load two objects
-    Object obj1, obj2;
-    if (!obj1.LoadFromObj("models/model.obj")) {
-        std::cerr << "Failed to load model.obj" << std::endl;
-        return -1;
-    }
-    if (!obj2.LoadFromObj("models/al.obj")) {
-        std::cerr << "Failed to load al.obj" << std::endl;
+    // Setup texture for background image
+    pangolin::GlTexture imageTexture(width, height, GL_RGB, false, 0, GL_RGB, GL_UNSIGNED_BYTE);
+
+    // Load 3D object
+    Object obj1;
+    if(!obj1.LoadFromObj("models/model.obj")) {
+        cerr << "Failed to load 3D model" << endl;
         return -1;
     }
     obj1.UploadToGPU();
-    obj2.UploadToGPU();
 
-
+    // Compile shaders
     pangolin::GlSlProgram shader;
     shader.AddShader(pangolin::GlSlVertexShader, vertex_shader);
     shader.AddShader(pangolin::GlSlFragmentShader, fragment_shader);
     shader.Link();
 
-    // Camera: position at (25,0,0), look at (0,0,0), up is Y
-    pangolin::OpenGlRenderState s_cam(
-        pangolin::ProjectionMatrix(width, height, 500, 500, width/2, height/2, 0.1, 1000),
-        pangolin::ModelViewLookAt(25, 0, 0, 0, 0, 0, pangolin::AxisY)
-    );
-    pangolin::Handler3D handler(s_cam);
-    pangolin::View& d_cam = pangolin::CreateDisplay()
-        .SetBounds(0.0, 1.0, 0.0, 1.0, -width/(float)height)
-        .SetHandler(&handler);
+    // Camera parameters (using image dimensions)
+    const float fx = 500.0f;  // Focal length X (adjust as needed)
+    const float fy = 500.0f;  // Focal length Y
+    const float cx = width/2.0f;  // Principal point X
+    const float cy = height/2.0f; // Principal point Y
+pangolin::OpenGlMatrixSpec P = pangolin::ProjectionMatrixRDF_TopLeft(
+    width, height, fx, fy, cx, cy, 0.001, 1000
+);
+
+        pangolin::OpenGlMatrix view = pangolin::ModelViewLookAt(
+            3.0f, 3.0f, 3.0f,   // Camera position (3m from origin)
+            0.0f, 0.0f, 0.0f,   // Look at object position (origin)
+            0.0f, 1.0f, 0.0f    // Up vector
+        );
 
     // Main loop
-    while (!pangolin::ShouldQuit()) {
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    while(!pangolin::ShouldQuit()) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        d_cam.Activate(s_cam);
 
+        // 1. Draw background image
+        DrawImageTexture(imageTexture, image_rgb);
+        
+        // 2. Clear depth buffer for 3D objects
+        glClear(GL_DEPTH_BUFFER_BIT);
+
+        // 3. Set up projection matrix (use actual image dimensions)
+
+
+        // 4. Set up view matrix (closer camera)
+
+        // 5. Set up model matrix (reasonable scale + position)
+        pangolin::OpenGlMatrix model;
+        model.SetIdentity();
+        model.Translate(0.0f, 0.0f, 0.0f);  // Center at origin
+        float scaleFactor = 0.3f;
+        model.m[0] *= scaleFactor; // scale X
+        model.m[5] *= scaleFactor; // scale Y
+        model.m[10] *= scaleFactor; // scale Z                // Adjust based on object size
+
+        // 6. Render 3D object
         shader.Bind();
-
-        pangolin::OpenGlMatrix view = s_cam.GetModelViewMatrix();
-        pangolin::OpenGlMatrix proj = s_cam.GetProjectionMatrix();
-
-        // Draw obj1 at (-15, 0, 0)
-        pangolin::OpenGlMatrix model1;
-        model1.SetIdentity();
-        model1.m[12] = -15.0;
-        model1.m[13] = 0.0;
-        model1.m[14] = 0.0;
-
-
-        float scaleFactor = 0.2f;
-        model1.m[0] *= scaleFactor; // scale X
-        model1.m[5] *= scaleFactor; // scale Y
-        model1.m[10] *= scaleFactor; // scale Z
-
-        shader.SetUniform("model", model1);
-        shader.SetUniform("view", view);
-        shader.SetUniform("projection", proj);
+        glMatrixMode(GL_PROJECTION);
+        P.Load(); // Applies projection matrix
+        glMatrixMode(GL_MODELVIEW);
+        view.Load();
+        shader.SetUniform("model", model);
         obj1.Draw();
-
-        // Draw obj2 at (15, 0, 0)
-        pangolin::OpenGlMatrix model2;
-        model2.SetIdentity();
-        model2.m[12] = 15.0;
-        model2.m[13] = 0.0;
-        model2.m[14] = 0.0;
-        shader.SetUniform("model", model2);
-        shader.SetUniform("view", view);
-        shader.SetUniform("projection", proj);
-        obj2.Draw();
-
         shader.Unbind();
 
-        pangolin::glDrawAxis(1.0);
         pangolin::FinishFrame();
     }
+
     return 0;
 }
